@@ -1,0 +1,11 @@
+.gstr
+/node_modules
+dist
+.log/
+release
+.env
+
+log/
+__pycache__/
+_tpg/configuration/__pycache__/
+TPG.egg-info/

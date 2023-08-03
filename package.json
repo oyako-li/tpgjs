@@ -1,0 +1,23 @@
+{
+  "name": "core",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/lodash": "^4.14.196",
+    "lodash": "^4.17.21",
+    "typescript": "^5.0.4",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.16.0",
+    "@types/uuid": "^9.0.1",
+    "ts-node": "^10.9.1"
+  }
+}
