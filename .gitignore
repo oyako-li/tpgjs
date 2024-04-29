@@ -5,7 +5,7 @@ dist
 release
 .env
 
-log/
+log/*
 __pycache__/
 _tpg/configuration/__pycache__/
 TPG.egg-info/

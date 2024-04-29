@@ -1,14 +1,7 @@
 import { v4 as uuid } from "uuid";
 import dash, { List } from "lodash";
-import { UUID } from "crypto";
-
-export interface Params {
-  [name: string]: number;
-}
-
-export function flip(prob: number) {
-  return Math.random() < prob;
-}
+// import { UUID } from "crypto";
+import { Params, flip } from "./utils";
 
 export class Swarm<T> extends Set<T> {
   join(instance?: Swarm<T> | T) {
@@ -44,7 +37,7 @@ export class Swarm<T> extends Set<T> {
   }
 
   reduce(func: (before: T, after: T) => T): T {
-    let result = [...this][0];
+    let result = this.select;
     for (const value of this) {
       result = func(result, value);
     }
@@ -56,9 +49,20 @@ export class Swarm<T> extends Set<T> {
     for (const _value of this) _swarm.add(_value);
     return _swarm;
   }
+
+  get select(): T {
+    return [...this][0];
+  }
 }
 
 export class Qualia {
+  /**
+   * 性質：
+   *  時間経過とともに抽象化・簡素化されていく
+   *  想起回数に応じて固着していく
+   * ・宣言的記憶（事象・情報）→ str
+   * ・非宣言的記憶（スキル・習慣）→ int, List[int]
+   */
   public fragment: Team | any;
   private static _phrases: Swarm<Qualia> = new Swarm<Qualia>();
 
@@ -130,7 +134,7 @@ export class Program {
   public id: string;
   private static _programs: Swarm<Program> = new Swarm<Program>();
 
-  constructor(_instance?: Program | number, _id?: UUID, maxVal: number = 40) {
+  constructor(_instance?: Program | number, _id?: string, maxVal: number = 40) {
     this.id = _id ? _id : uuid();
     if (_instance instanceof Program) {
       this.instructions = dash.cloneDeep(_instance.instructions);
@@ -253,7 +257,7 @@ export class Learner {
     _phrase?: Qualia,
     _program?: Program,
     _inTeam?: Swarm<Team> | Team,
-    _id?: UUID
+    _id?: string
   ) {
     this.phrase = new Qualia(_phrase);
     this.program = new Program(_program);
@@ -322,7 +326,7 @@ export class Team {
     _inLearners?: Swarm<Learner> | Learner,
     _outcomes?: Map<string, number>,
     _fitness?: number,
-    _id?: UUID
+    _id?: string
   ) {
     this.learners = new Swarm<Learner>();
     this.inLearners = new Swarm<Learner>();
@@ -592,7 +596,7 @@ export class Tpg {
     _teamPopSize?: number,
     _generations?: number,
     _mutateParams?: Params,
-    _id?: UUID
+    _id?: string
   ) {
     this.teamPopSize = _teamPopSize ? _teamPopSize : 10;
     this.teams = new Swarm<Team>();
