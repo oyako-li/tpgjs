@@ -63,11 +63,11 @@ export class Neuron {
     Neuron.brain.add(this);
   }
 
-  public spike(state: any, visited: Swarm<string>, args: Params): Qualia {
+  public spike(state: any, visited: Swarm<string>, args: Params): Neuron {
     visited.add(this.id);
     const next = this.dendrites.filter((den) => !visited.has(den.to.id));
     if (next.size < 1) {
-      return this.qualia;
+      return this;
     } else {
       const destination: Dendrite = next
         .map((x) => {
@@ -103,26 +103,33 @@ export class Hippocampus {
 
 export class Cerebrum {
   /**
-   * 階層構造のベイジアンネットワーク
+   * 階層構造の選好関係グラフィカルモデル
    */
   public edges: Swarm<Dendrite>;
   public nodes: Swarm<Neuron>;
   public memory: Hippocampus;
+  public args: Params;
 
   constructor(phrases: Array<any>, initialParams?: Params) {
     phrases.map((q) => new Neuron(new Qualia(q)));
     this.nodes = Neuron.brain;
     this.edges = Dendrite.synapses;
     this.memory = new Hippocampus();
+    this.args = {
+      probability: 0.5,
+    };
   }
 
   /**
    * recall
    * 想起
    */
-  public recall(state: any) {
+  public *recall(state: any): Generator<Neuron> {
     let i = 0;
-    // while (true) yield i++;
+    while (true) {
+      let visited = new Swarm<string>();
+      for (let node of this.nodes) yield node.spike(state, visited, this.args);
+    }
   }
 
   /**
@@ -141,15 +148,21 @@ export class Cerebrum {
 
 if (require.main === module) {
   console.debug(`unit test cerebrum`);
-  const brain = new Cerebrum([
+  const actor = new Cerebrum([
     [1, 2, 3],
     [1, 3],
     [3, 5],
   ]);
-  let result;
+  const critic = new Cerebrum([
+    [1, 2, 3],
+    [1, 3],
+    [3, 5],
+  ]);
   try {
-    result = brain.recall(["test"]);
+    let player = actor.recall(["test"]);
+    
+    for (let action of player.qualia)
   } catch (e) {
-    result = e;
+    
   }
 }
