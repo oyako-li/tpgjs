@@ -15,9 +15,15 @@ export class Swarm<T> extends Set<T> {
   }
 
   choice(): T {
-    const _set = Array.from(this);
+    const _set = [...this];
     const _index = Math.floor(Math.random() * this.size);
     return _set[_index];
+  }
+
+  choices(i: number = 1): Swarm<T> {
+    let _swarm = new Swarm<T>();
+    while (i-- > 0) _swarm.add(this.choice());
+    return _swarm;
   }
 
   filter(func: (value: T) => boolean): Swarm<T> {
@@ -48,6 +54,10 @@ export class Swarm<T> extends Set<T> {
     let _swarm = new Swarm<T>();
     for (const _value of this) _swarm.add(_value);
     return _swarm;
+  }
+
+  difference(other: Swarm<T>): Swarm<T> {
+    return this.filter((x) => !other.has(x));
   }
 
   get select(): T {
@@ -121,18 +131,25 @@ export class Qualia {
   public static get phrases(): Swarm<Qualia> {
     return Qualia._phrases;
   }
+
+  *[Symbol.iterator]() {
+    for (let f of this.fragment) {
+      yield f;
+    }
+  }
 }
 
+/**
+ * calculation state bit
+ * @param instructions [:][0]: operations
+ * @param instructions [:][1]: destinations
+ * @param instructions [:][2]: leftOperands
+ * @param instructions [:][3]: rightOperands
+ */
 export class Program {
-  /**
-   * instructions[:][0]: operations
-   * instructions[:][1]: destinations
-   * instructions[:][2]: leftOperands
-   * instructions[:][3]: rightOperands
-   */
   public instructions: Array<any>;
   public id: string;
-  private static _programs: Swarm<Program> = new Swarm<Program>();
+  private static programs: Swarm<Program> = new Swarm<Program>();
 
   constructor(_instance?: Program | number, _id?: string, maxVal: number = 40) {
     this.id = _id ? _id : uuid();
@@ -147,11 +164,14 @@ export class Program {
         Array.from({ length: 4 }, () => Math.floor(Math.random() * 4))
       );
     }
-    this.id = uuid();
-    Program._programs.add(this);
+    Program.programs.add(this);
   }
 
-  public execute(state: any, registers: Array<any>, args: any): Array<number> {
+  public execute(
+    state: any,
+    registers: Array<number>,
+    args: any
+  ): Array<number> {
     let target = [...registers, ...state];
     let memory = registers;
     for (let i = 0; i < this.instructions.length; i++) {
