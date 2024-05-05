@@ -4,14 +4,28 @@ import dash, { List } from "lodash";
 import { Params, flip } from "./utils";
 
 export class Swarm<T> extends Set<T> {
-  join(instance?: Swarm<T> | T) {
+  constructor(instance?: Swarm<T> | Array<T> | T) {
+    super(); // Initialize an empty Set first
+    if (instance !== undefined) {
+      if (Symbol.iterator in Object(instance)) {
+        for (const item of instance as Iterable<T>) {
+          this.add(item);
+        }
+      } else {
+        this.add(instance as T);
+      }
+    }
+  }
+
+  join(instance?: Swarm<T> | T): Swarm<T> {
     if (instance === undefined) {
-      return;
+      return this;
     } else if (instance instanceof Swarm) {
       for (const t of instance) this.add(t);
     } else {
       this.add(instance);
     }
+    return this;
   }
 
   choice(): T {

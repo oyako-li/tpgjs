@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-import { Params, flip } from "./utils";
+import { Params, flip, sigmoid } from "./utils";
 import { Swarm, Program } from "./tpg";
 import { Activator } from "./activator";
 import assert from "assert";
@@ -26,8 +26,14 @@ export class Qualia {
   }
 
   *[Symbol.iterator]() {
-    for (let f of this.fragment) {
-      yield f;
+    // this.fragment がイテラブルオブジェクトか確認
+    if (this.fragment && typeof this.fragment[Symbol.iterator] === "function") {
+      for (let f of this.fragment) {
+        yield f;
+      }
+    } else {
+      // this.fragment がイテラブルでない場合、単一のオブジェクトとして処理
+      yield this.fragment;
     }
   }
 }
@@ -37,18 +43,18 @@ export class Qualia {
  */
 export class Dendrite {
   public id: string;
-  public from: Neuron;
-  public to: Neuron;
+  public to: Swarm<Neuron> = new Swarm<Neuron>();
   public registers: Array<number>;
   public program: Program;
   public static synapses: Swarm<Dendrite> = new Swarm<Dendrite>();
 
-  constructor(_from: Neuron, _to?: Neuron, _id?: string) {
-    this.from = _from;
-    this.to = _to ? _to : Neuron.brain.choice();
-    this.registers = Array.from({ length: 8 }, () => 0.0);
-    this.program = new Program();
-    this.id = _id ? _id : uuid();
+  constructor(_to?: Dendrite, _id: string = uuid()) {
+    this.to = _to
+      ? _to.to
+      : Neuron.brain.filter((neu) => neu.resource > 0).choices();
+    this.registers = _to ? _to.registers : Array.from({ length: 8 }, () => 0.0);
+    this.program = _to ? _to.program : new Program();
+    this.id = _id;
     Dendrite.synapses.add(this);
   }
 
@@ -56,20 +62,23 @@ export class Dendrite {
     return this.program.execute(state, this.registers, args);
   }
 
-  public mutate(mutateParams: Params) {
-    let changed = false;
-    while (!changed) {
-      // mutate the program
-      if (flip(mutateParams["probability"])) {
-        changed = true;
-        this.program.mutate(mutateParams);
-      }
-      // mutate the phrase
-      if (flip(mutateParams["probability"])) {
-        changed = true;
-        this.to.mutate(mutateParams);
-      }
+  public mutate(mutateParams: Params): Dendrite {
+    const mutate = {
+      threshold: 0.5,
+      additional: 0.5,
+      ...mutateParams,
+    };
+    while (flip(mutate["additional"])) {
+      this.to.join(Neuron.brain.choice());
     }
+    return this;
+  }
+
+  /**
+   * accend
+   */
+  get accent(): Array<Neuron> {
+    return [...this.to].sort((a, b) => b.resource - a.resource);
   }
 }
 
@@ -80,19 +89,19 @@ export class Neuron {
   public id: string;
   public qualia: Qualia;
   public resource: number;
-  public dendrites: Swarm<Dendrite> = new Swarm<Dendrite>();
+  public dendrites: Dendrite;
   public static brain: Swarm<Neuron> = new Swarm<Neuron>();
 
   constructor(
     _qualia: Qualia,
-    _dendrites?: Swarm<Dendrite> | Dendrite,
-    _resource?: number,
-    _id?: string
+    _resource: number = 1,
+    _dendrites?: Dendrite,
+    _id: string = uuid()
   ) {
     this.qualia = new Qualia(_qualia);
-    this.dendrites = new Swarm<Dendrite>();
-    this.resource = _resource ? _resource : 1000000;
-    this.id = _id ? _id : uuid();
+    this.dendrites = new Dendrite(_dendrites);
+    this.resource = _resource;
+    this.id = _id;
     Neuron.brain.add(this);
   }
 
@@ -105,36 +114,62 @@ export class Neuron {
    */
   public spike(state: any, visited: Swarm<string>, args: Params): Neuron {
     visited.add(this.id);
-    this.resource += args["spike_resource"];
+    this.resource *= args["spike_resource"];
+    const revenue_rate = args["revenue_rate"];
 
-    const next = this.dendrites.filter((den) => !visited.has(den.to.id));
+    const next: Swarm<Neuron> = this.dendrites.to.filter(
+      (neu) => neu && !visited.has(neu.id)
+    );
     if (next.size < 1) {
       return this;
     } else {
-      const destination: Dendrite = next
+      const destination = next
         .map((x) => {
-          this.resource -= x
-            .bid(state, args)
-            .reduce((total, current) => total + current);
+          let revenue = x.resource * revenue_rate;
+          x.resource -= revenue;
+          this.resource *=
+            revenue -
+            sigmoid(
+              x.dendrites
+                .bid(state, args)
+                .reduce((total, current) => total + current)
+            );
           return x;
         })
         .reduce(
-          (before: Dendrite, after: Dendrite): Dendrite =>
-            before.registers.reduce((total, current) => total + current) <
-            after.registers.reduce((total, current) => total + current)
-              ? before
-              : after
+          //潜在的に残っている失敗ノードの選択は起こらない。
+          (before: Neuron, after: Neuron): Neuron =>
+            before.resource > after.resource ? before : after
         );
-      return destination.to.spike(state, visited, args); //-> Consciousness Table = hippocampus
+      return destination.spike(state, visited, args); //-> Consciousness Table = hippocampus
     }
   }
 
   /**
-   *
+   * mutate dendrites
+   * ノード自体にそも失敗の経験を覚えさせ、それ以外の選択肢を捨象する
+   * 自分の持っているプログラムから最大の報酬を得られる他のリソース（ノード）を取り込むことにする
+   * また、搾取されるようなノードからは切り離したいが、、
+   * 生存確率が残っていないノードはdendritesを伸ばせない
    * @param mutateParams mutation parameter
    */
-  public mutate(mutateParams: Params) {
-    // oblivion
+  public mutate(mutateParams: Params = {}) {
+    const mutate = {
+      threshold: 0.4,
+      additional: 0.5,
+      ...mutateParams,
+    };
+    mutate["threshold"] *= 1 - this.resource;
+    mutate["additional"] *= 1 - this.resource;
+
+    if (flip(this.resource)) {
+      const t = Math.floor(this.dendrites.to.size * mutate["threshold"]);
+      this.dendrites.to = new Swarm<Neuron>(this.dendrites.accent.slice(0, -t));
+      this.dendrites.mutate(mutate);
+      return this;
+    } else {
+      Neuron.brain.delete(this);
+    }
   }
 }
 /**
@@ -157,7 +192,7 @@ export class Hippocampus {
 /**
  * 階層構造の選好関係グラフィカルモデル
  * @param edges global dendrite swarm
- * @param nodes global neuron swarm
+ * @param node global neuron swarm
  * @param memory global cache memory
  * @param args global parameters
  * @function *recall generator of end node
@@ -165,8 +200,7 @@ export class Hippocampus {
  * @function oblivion
  */
 export class Cerebrum {
-  public edges: Swarm<Dendrite>;
-  public nodes: Swarm<Neuron>;
+  public node: Neuron;
   public memory: Hippocampus;
   public args: Params;
 
@@ -175,17 +209,19 @@ export class Cerebrum {
    * @param phrases initial recalling signal
    * @param initialParams some params
    */
-  constructor(phrases: Array<any>, initialParams?: Params) {
+  constructor(phrases: Array<any>, initialParams: Params = {}) {
     phrases.map((q) => this.remember(q));
-    this.nodes = Neuron.brain;
-    this.edges = Dendrite.synapses;
+    this.node = new Neuron(new Qualia([0]), Infinity);
     this.memory = new Hippocampus();
-    this.args = initialParams
-      ? initialParams
-      : {
-          probability: 0.5,
-          spike_resource: 1000,
-        };
+    this.args = {
+      probability: 0.5,
+      spike_resource: 1.2,
+      revenue_rate: 0.01,
+      ebbinghaus: 0.97,
+      threshold: 0.8,
+      additional: 0.5,
+      ...initialParams,
+    };
   }
 
   /**
@@ -194,12 +230,13 @@ export class Cerebrum {
    * @param state vector input
    * @returns Neuron
    */
-  public *recall(state: any): Generator<Neuron> {
-    const to = this.edges.map((e) => e.to);
-    const roots = this.nodes.difference(to);
+  public recall(state: any, _args: Params = {}): Neuron {
     const visited = new Swarm<string>();
-    for (let node of roots) yield node.spike(state, visited, this.args);
-    this.recall(state);
+    const args = {
+      ...this.args,
+      ..._args,
+    };
+    return this.node.spike(state, visited, args);
   }
 
   /**
@@ -215,8 +252,23 @@ export class Cerebrum {
   /**
    * oblivion
    * 忘却
+   * 存在確率の低いやつが消される->忘却確率
+   * dendritesに所属していないNodeが消される？
    */
-  public oblivion() {}
+  public oblivion(_args: Params = {}) {
+    const args = {
+      ...this.args,
+      ..._args,
+    };
+    const ebbinghaus = args["ebbinghaus"];
+    const threshold = args["threshold"];
+    Neuron.brain = Neuron.brain
+      .map((neu) => {
+        neu.resource *= ebbinghaus;
+        return neu;
+      })
+      .filter((neu) => neu.resource > threshold);
+  }
 }
 
 if (require.main === module) {
@@ -232,7 +284,7 @@ if (require.main === module) {
     for (let action of player.qualia) {
       try {
         const runner = new Activator(action);
-        runner.run((action) => {
+        runner.run(async (action) => {
           console.log(action);
         }, 100);
       } catch (e) {

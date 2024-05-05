@@ -11,16 +11,22 @@ export class Activator<U> {
     Activator.actions.add(this);
   }
   public async run(
-    func: (action: any) => U,
+    func: (action: any) => Promise<U>,
     timeout: number = 1
-  ): Promise<U | NodeJS.Timeout | Error> {
-    let res;
-    res = await setTimeout(() => {
-      res = func(this.signal);
-      Activator.actions.delete(this);
-      return res;
-    }, timeout);
-    Activator.actions.delete(this);
-    return res;
+  ): Promise<U | Error | any> {
+    return Promise.race([
+      new Promise((resolve, reject) => {
+        func(this.signal).then((result: U) => {
+          Activator.actions.delete(this);
+          resolve(result);
+        });
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => {
+          Activator.actions.delete(this);
+          reject(new Error("Timeout occurred"));
+        }, timeout)
+      ),
+    ]);
   }
 }

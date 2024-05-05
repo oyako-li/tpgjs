@@ -6,6 +6,10 @@ export function flip(prob: number) {
   return Math.random() < prob;
 }
 
+export function sigmoid(x: number): number {
+  return 1 / (1 + Math.E ** -x);
+}
+
 interface Memory {
   type: "sensory" | "shortTerm" | "longTerm";
   content: any;
