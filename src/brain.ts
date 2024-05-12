@@ -87,7 +87,7 @@ export class Dendrite {
  */
 export class Neuron {
   public id: string;
-  public qualia: Qualia;
+  public _qualia: Qualia;
   public resource: number;
   public dendrites: Dendrite;
   public static brain: Swarm<Neuron> = new Swarm<Neuron>();
@@ -98,7 +98,7 @@ export class Neuron {
     _dendrites?: Dendrite,
     _id: string = uuid()
   ) {
-    this.qualia = new Qualia(_qualia);
+    this._qualia = new Qualia(_qualia);
     this.dendrites = new Dendrite(_dendrites);
     this.resource = _resource;
     this.id = _id;
@@ -120,26 +120,26 @@ export class Neuron {
     const next: Swarm<Neuron> = this.dendrites.to.filter(
       (neu) => neu && !visited.has(neu.id)
     );
+    console.log(`spike: `, this);
     if (next.size < 1) {
+      console.log(`result: `, this);
       return this;
     } else {
       const destination = next
         .map((x) => {
-          let revenue = x.resource * revenue_rate;
-          x.resource -= revenue;
-          this.resource *=
-            revenue -
-            sigmoid(
-              x.dendrites
-                .bid(state, args)
-                .reduce((total, current) => total + current)
-            );
+          // let revenue = x.resource * revenue_rate;
+          // x.resource -= revenue;
+          // this.resource *=
+          //   revenue -
+          //   sigmoid(
+          //   );
+          x.dendrites.bid(state, args);
           return x;
         })
         .reduce(
           //潜在的に残っている失敗ノードの選択は起こらない。
           (before: Neuron, after: Neuron): Neuron =>
-            before.resource > after.resource ? before : after
+            before.resource < after.resource ? before : after
         );
       return destination.spike(state, visited, args); //-> Consciousness Table = hippocampus
     }
@@ -169,6 +169,20 @@ export class Neuron {
       return this;
     } else {
       Neuron.brain.delete(this);
+    }
+  }
+
+  public *qualia(): Generator<any> {
+    if (
+      this._qualia.fragment &&
+      typeof this._qualia.fragment[Symbol.iterator] === "function"
+    ) {
+      for (let f of this._qualia.fragment) {
+        yield f;
+      }
+    } else {
+      // this._qualia.fragment がイテラブルでない場合、単一のオブジェクトとして処理
+      yield this._qualia.fragment;
     }
   }
 }
@@ -203,6 +217,7 @@ export class Cerebrum {
   public node: Neuron;
   public memory: Hippocampus;
   public args: Params;
+  public generation: number = 0;
 
   /**
    * constructor
@@ -211,17 +226,18 @@ export class Cerebrum {
    */
   constructor(phrases: Array<any>, initialParams: Params = {}) {
     phrases.map((q) => this.remember(q));
-    this.node = new Neuron(new Qualia([0]), Infinity);
-    this.memory = new Hippocampus();
     this.args = {
-      probability: 0.5,
+      dendrites: 11,
+      probability: 0.8,
       spike_resource: 1.2,
       revenue_rate: 0.01,
       ebbinghaus: 0.97,
-      threshold: 0.8,
-      additional: 0.5,
+      threshold: 0.6,
+      additional: 0.9,
       ...initialParams,
     };
+    this.node = new Neuron(new Qualia(NaN), Infinity);
+    this.memory = new Hippocampus();
   }
 
   /**
@@ -236,6 +252,9 @@ export class Cerebrum {
       ...this.args,
       ..._args,
     };
+    if (!(Symbol.iterator in Object(state))) {
+      state = [state];
+    }
     return this.node.spike(state, visited, args);
   }
 
@@ -268,6 +287,9 @@ export class Cerebrum {
         return neu;
       })
       .filter((neu) => neu.resource > threshold);
+    this.node.mutate(args);
+    console.debug(`oblivion: ${++this.generation}`);
+    // console.debug(this.node.dendrites.to);
   }
 }
 
@@ -281,7 +303,7 @@ if (require.main === module) {
 
   let player = actor.recall([1, 2, 3, 4]);
   if (player instanceof Neuron) {
-    for (let action of player.qualia) {
+    for (let action of player.qualia()) {
       try {
         const runner = new Activator(action);
         runner.run(async (action) => {

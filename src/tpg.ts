@@ -165,8 +165,12 @@ export class Program {
   public id: string;
   private static programs: Swarm<Program> = new Swarm<Program>();
 
-  constructor(_instance?: Program | number, _id?: string, maxVal: number = 40) {
-    this.id = _id ? _id : uuid();
+  constructor(
+    _instance?: Program | number,
+    _id: string = uuid(),
+    maxVal: number = 40
+  ) {
+    this.id = _id;
     if (_instance instanceof Program) {
       this.instructions = dash.cloneDeep(_instance.instructions);
     } else if (typeof _instance === "number") {

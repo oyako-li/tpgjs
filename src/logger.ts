@@ -14,7 +14,7 @@ export function formatDate(date: Date) {
 export function myLog(file?: string) {
   return function () {
     const date = new Date();
-    const path = `../log/${date.getFullYear()}-${date.getMonth() + 1}`;
+    const path = `./log/${date.getFullYear()}-${date.getMonth() + 1}`;
     const now = `${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}-${date.getMilliseconds()}`;
     if (!fs.existsSync(path)) {
       fs.mkdirSync(path, { recursive: true });
