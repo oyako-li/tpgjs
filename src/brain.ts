@@ -67,6 +67,12 @@ export class Neuron {
     return [...this.synapse].sort((a, b) => b.resource - a.resource);
   }
 
+  set reward(rate:number) {
+    const threshold = Number.MAX_VALUE / rate;
+    if (this.resource < threshold) this.resource*=rate;
+    else this.resource = Infinity;
+  }
+
   /**
    *
    * @param state vector
@@ -76,7 +82,7 @@ export class Neuron {
    */
   public spike(state: any, visited: Swarm<string>, args: Params): Neuron {
     visited.add(this.id);
-    this.resource *= args["spike_resource"];
+    this.reward = args["spike_resource"];
     const revenue_rate = args["revenue_rate"];
 
     const next: Swarm<Neuron> = this.synapse.filter(
@@ -134,7 +140,7 @@ export class Neuron {
       this.synapse.map((x) => x.mutate(mutate));
       return this;
     } else {
-      console.log("delete:", this.id);
+      console.debug("delete:", this.id, this._qualia);
       Neuron.brain.delete(this);
     }
   }
@@ -172,7 +178,6 @@ export class Hippocampus {
 
 /**
  * 階層構造の選好関係グラフィカルモデル
- * @param edges global dendrite swarm
  * @param node global neuron swarm
  * @param memory global cache memory
  * @param args global parameters
@@ -247,8 +252,7 @@ export class Cerebrum {
       ..._args,
     };
     const ebbinghaus = args["ebbinghaus"];
-    const threshold = args["threshold"];
-    Neuron.brain.map((neu) => (neu.resource *= ebbinghaus));
+    Neuron.brain.map((neu) => (neu.reward = ebbinghaus));
     this.node.mutate(args);
     console.debug(`oblivion: ${++this.generation}`);
     // console.debug(this.node.synapse.to);
@@ -272,7 +276,7 @@ if (require.main === module) {
           console.log(action);
         }, 100);
       } catch (e) {
-        player.resource -= 1000;
+        player.reward = 1000;
       }
     }
   }
