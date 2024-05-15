@@ -46,7 +46,7 @@ export class Neuron {
   public _qualia: Qualia;
   public resource: number;
   public program: Program = new Program();
-  public registers: Array<number> = Array.from({ length: 8 }, () => 0.0);
+  public registers: Array<number> = Array.from({ length: 8 }, () => Math.random());
   public synapse: Swarm<Neuron> = new Swarm<Neuron>();
   public static brain: Swarm<Neuron> = new Swarm<Neuron>();
 
@@ -88,23 +88,24 @@ export class Neuron {
     const next: Swarm<Neuron> = this.synapse.filter(
       (neu) => neu && !visited.has(neu.id)
     );
-    if (next.size < 1) {
+    const destination = next.add(this)
+      .map((x) => {
+        // let revenue = x.resource * revenue_rate;
+        // x.resource -= revenue;
+        // this.resource *=
+        //   revenue - sigmoid(x.bid(state, args).reduce((b, a) => b + a));
+        return x.bid(state, args);
+      })
+      .reduce(
+        (before: Neuron, after: Neuron): Neuron =>
+          before.registers[0] < after.registers[0] ? before : after
+      );
+    // console.debug("spike:",destination);
+    if (destination===this){
+      // console.debug("result:", this);
       return this;
-    } else {
-      const destination = next
-        .map((x) => {
-          // let revenue = x.resource * revenue_rate;
-          // x.resource -= revenue;
-          // this.resource *=
-          //   revenue - sigmoid(x.bid(state, args).reduce((b, a) => b + a));
-          return x.bid(state, args);
-        })
-        .reduce(
-          (before: Neuron, after: Neuron): Neuron =>
-            before.registers[0] > after.registers[0] ? before : after
-        );
-      return destination.spike(state, visited, args); //-> Consciousness Table = hippocampus
     }
+    return destination.spike(state, visited, args); //-> Consciousness Table = hippocampus
   }
 
   public bid(state: any, args: any): Neuron {
@@ -255,7 +256,7 @@ export class Cerebrum {
     Neuron.brain.map((neu) => (neu.reward = ebbinghaus));
     this.node.mutate(args);
     console.debug(`oblivion: ${++this.generation}`);
-    // console.debug(this.node.synapse.to);
+    // console.debug(this.node.accent);
   }
 }
 
