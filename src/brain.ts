@@ -27,7 +27,7 @@ export class Qualia {
 
   *[Symbol.iterator]() {
     // this.fragment がイテラブルオブジェクトか確認
-    if (this.fragment && typeof this.fragment[Symbol.iterator] === "function") {
+    if (typeof this.fragment[Symbol.iterator] === "function") {
       for (let f of this.fragment) {
         yield f;
       }
@@ -46,7 +46,9 @@ export class Neuron {
   public _qualia: Qualia;
   public resource: number;
   public program: Program = new Program();
-  public registers: Array<number> = Array.from({ length: 8 }, () => Math.random());
+  public registers: Array<number> = Array.from({ length: 8 }, () =>
+    Math.random()
+  );
   public synapse: Swarm<Neuron> = new Swarm<Neuron>();
   public static brain: Swarm<Neuron> = new Swarm<Neuron>();
 
@@ -67,9 +69,9 @@ export class Neuron {
     return [...this.synapse].sort((a, b) => b.resource - a.resource);
   }
 
-  set reward(rate:number) {
+  set reward(rate: number) {
     const threshold = Number.MAX_VALUE / rate;
-    if (this.resource < threshold) this.resource*=rate;
+    if (this.resource < threshold) this.resource *= rate;
     else this.resource = Infinity;
   }
 
@@ -88,23 +90,15 @@ export class Neuron {
     const next: Swarm<Neuron> = this.synapse.filter(
       (neu) => neu && !visited.has(neu.id)
     );
-    const destination = next.add(this)
-      .map((x) => {
-        // let revenue = x.resource * revenue_rate;
-        // x.resource -= revenue;
-        // this.resource *=
-        //   revenue - sigmoid(x.bid(state, args).reduce((b, a) => b + a));
-        return x.bid(state, args);
-      })
+    const destination = next
+      .add(this)
+      .map((x) => x.bid(state, args))
       .reduce(
         (before: Neuron, after: Neuron): Neuron =>
           before.registers[0] < after.registers[0] ? before : after
       );
     // console.debug("spike:",destination);
-    if (destination===this){
-      // console.debug("result:", this);
-      return this;
-    }
+    if (destination === this) return this;
     return destination.spike(state, visited, args); //-> Consciousness Table = hippocampus
   }
 
@@ -128,8 +122,8 @@ export class Neuron {
       ...mutateParams,
     };
     if (this.resource !== Infinity) {
-      mutate["threshold"] *= 1 - this.resource;
-      mutate["additional"] *= 1 - this.resource;
+      mutate["threshold"] *= 1 - sigmoid(this.resource);
+      mutate["additional"] *= 1 - sigmoid(this.resource);
     }
 
     if (flip(this.resource)) {
@@ -141,7 +135,7 @@ export class Neuron {
       this.synapse.map((x) => x.mutate(mutate));
       return this;
     } else {
-      console.debug("delete:", this.id, this._qualia);
+      // console.debug("delete:", this.id, this._qualia);
       Neuron.brain.delete(this);
     }
   }
@@ -160,35 +154,18 @@ export class Neuron {
     }
   }
 }
-/**
- * cache memory
- * 想起頻度が上がることによって感情価が大きくなるから、明記されやすくなる
- */
-export class Hippocampus {
-  constructor() {}
-  /**
-   * sort
-   */
-  public sort() {}
-
-  /**
-   * overwrite
-   */
-  public overwrite() {}
-}
 
 /**
  * 階層構造の選好関係グラフィカルモデル
  * @param node global neuron swarm
  * @param memory global cache memory
  * @param args global parameters
- * @function *recall generator of end node
+ * @function recall generator of end node
  * @function remember
  * @function oblivion
  */
 export class Cerebrum {
   public node: Neuron;
-  public memory: Hippocampus;
   public args: Params;
   public generation: number = 0;
 
@@ -198,7 +175,7 @@ export class Cerebrum {
    * @param initialParams some params
    */
   constructor(phrases: Array<any>, initialParams: Params = {}) {
-    phrases.map((q) => this.remember(q));
+    phrases.map((q) => this.remember(q, Infinity));
     this.args = {
       synapse: 11,
       probability: 0.8,
@@ -210,7 +187,10 @@ export class Cerebrum {
       ...initialParams,
     };
     this.node = new Neuron(new Qualia(NaN), Infinity);
-    this.memory = new Hippocampus();
+  }
+
+  get sleepiness() {
+    return;
   }
 
   /**
@@ -237,8 +217,8 @@ export class Cerebrum {
    * バッチ処理的に覚える
    * @param qualia create new new neuron?
    */
-  public remember(qualia: any) {
-    new Neuron(new Qualia(qualia));
+  public remember(qualia: any, existance: number = 1) {
+    new Neuron(new Qualia(qualia), existance);
   }
 
   /**
@@ -257,28 +237,5 @@ export class Cerebrum {
     this.node.mutate(args);
     console.debug(`oblivion: ${++this.generation}`);
     // console.debug(this.node.accent);
-  }
-}
-
-if (require.main === module) {
-  console.debug(`unit test cerebrum`);
-  const actor = new Cerebrum([
-    [1, 2, 3],
-    [1, 3],
-    [3, 5],
-  ]);
-
-  let player = actor.recall([1, 2, 3, 4]);
-  if (player instanceof Neuron) {
-    for (let action of player.qualia()) {
-      try {
-        const runner = new Activator(action);
-        runner.run(async (action) => {
-          console.log(action);
-        }, 100);
-      } catch (e) {
-        player.reward = 1000;
-      }
-    }
   }
 }

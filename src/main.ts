@@ -21,14 +21,15 @@ if (require.main === module) {
     let state = input();
     let story = emulator.recall(state);
     let player = actor.recall(story.qualia);
-    let consciousness = evaluator.recall([...state, ...story.qualia]);
+    let consciousness = evaluator.recall([...state, ...story.qualia()]);
 
     if (player instanceof Neuron) {
-      for (let action of player.qualia) {
+      for (let action of player.qualia()) {
         try {
           const runner = new Activator(action);
           runner.run((action: any) => {
-            console.log(action);
+            // console.log(action);
+            return action;
           }, 100);
         } catch (e) {
           player.resource -= 1000;

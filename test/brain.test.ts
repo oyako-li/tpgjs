@@ -41,11 +41,12 @@ describe("テスト brain.ts", () => {
       expect(player).toBeInstanceOf(Neuron);
 
       if (player instanceof Neuron)
-        for (let action of player.qualia) {
+        for (let action of player.qualia()) {
           try {
             const activate = new Activator(action);
             activate.run((action) => {
               console.log(action);
+              return action;
             }, 100);
           } catch (e) {
             player.resource -= 1000;
