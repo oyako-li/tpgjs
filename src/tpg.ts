@@ -1,7 +1,7 @@
 import { v4 as uuid } from "uuid";
 import dash, { List } from "lodash";
 // import { UUID } from "crypto";
-import { Params, flip } from "./utils";
+import { Params, flip } from "./utils.ts";
 
 export class Swarm<T> extends Set<T> {
   constructor(instance?: Swarm<T> | Array<T> | T) {
@@ -35,21 +35,21 @@ export class Swarm<T> extends Set<T> {
   }
 
   choices(i: number = 1): Swarm<T> {
-    let _swarm = new Swarm<T>();
+    const _swarm = new Swarm<T>();
     while (i-- > 0) _swarm.add(this.choice());
     return _swarm;
   }
 
   filter(func: (value: T) => boolean): Swarm<T> {
-    let _swarm = new Swarm<T>();
+    const _swarm = new Swarm<T>();
     for (const _value of this) {
       if (func(_value)) _swarm.add(_value);
     }
     return _swarm;
   }
 
-  map(func: (value: T) => any): Swarm<any> {
-    let _swarm = new Swarm<any>();
+  map<U>(func: (value: T) => U): Swarm<U> {
+    const _swarm = new Swarm<U>();
     for (const value of this) {
       _swarm.add(func(value));
     }
@@ -65,17 +65,21 @@ export class Swarm<T> extends Set<T> {
   }
 
   clone(): Swarm<T> {
-    let _swarm = new Swarm<T>();
+    const _swarm = new Swarm<T>();
     for (const _value of this) _swarm.add(_value);
     return _swarm;
   }
 
-  difference(other: Swarm<T>): Swarm<T> {
-    return this.filter((x) => !other.has(x));
-  }
+  // difference(other: ReadonlySet<T>): Swarm<T> {
+  //   return new Swarm([...this].filter((x) => !other.has(x)));
+  // }
 
   get select(): T {
     return [...this][0];
+  }
+
+  get length(): number {
+    return this.size;
   }
 }
 
@@ -185,11 +189,7 @@ export class Program {
     Program.programs.add(this);
   }
 
-  public execute(
-    state: any,
-    registers: Array<number>,
-    args: any
-  ): Array<number> {
+  public execute(state: any, registers: Array<number>, args: any): number {
     let target = [...registers, ...state];
     let memory = registers;
     for (let i = 0; i < this.instructions.length; i++) {
@@ -199,7 +199,7 @@ export class Program {
       const r = this.instructions[i][3] % target.length;
       memory[d] = this.operation(o, target[l], target[r]);
     }
-    return memory;
+    return memory[0];
   }
 
   public mutate(mutateParams: Params) {
@@ -749,18 +749,4 @@ export class Tpg {
   public save() {}
 
   static load() {}
-}
-
-if (require.main === module) {
-  console.debug("unit test tpg");
-  let phrases = new Swarm<Qualia>();
-  [
-    [1, 2, 3],
-    [1, 3],
-    [3, 5],
-  ].map((x) => phrases.add(new Qualia(x)));
-  const brain = new Tpg(phrases);
-  console.log(brain.phrases);
-  console.log(brain.teams);
-  console.log(Qualia.phrases);
 }

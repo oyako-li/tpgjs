@@ -20,11 +20,12 @@ describe("美しい言葉を生み出すかどうかの実験", () => {
     console.log("正常系テストケース1");
     let player = actor.recall([1, 2, 3, 4]);
     if (player instanceof Neuron) {
-      for (let action of player.qualia) {
+      for (let action of player.qualia()) {
         try {
           const runner = new Activator(action);
           runner.run((action) => {
             console.log(action);
+            return action;
           }, 100);
         } catch (e) {
           player.resource -= 1000;

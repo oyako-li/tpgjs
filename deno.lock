@@ -1,0 +1,71 @@
+{
+  "version": "4",
+  "specifiers": {
+    "jsr:@deno-library/progress@*": "1.5.1",
+    "jsr:@std/async@*": "1.0.12",
+    "jsr:@std/fmt@1.0.3": "1.0.3",
+    "jsr:@std/io@0.225.0": "0.225.0"
+  },
+  "jsr": {
+    "@deno-library/progress@1.5.1": {
+      "integrity": "966611826b8bb27baae73ab1c4fa4317cd4edd2abb99750cd6f8488d22d5b121",
+      "dependencies": [
+        "jsr:@std/fmt",
+        "jsr:@std/io"
+      ]
+    },
+    "@std/async@1.0.12": {
+      "integrity": "d1bfcec459e8012846fe4e38dfc4241ab23240ecda3d8d6dfcf6d81a632e803d"
+    },
+    "@std/fmt@1.0.3": {
+      "integrity": "97765c16aa32245ff4e2204ecf7d8562496a3cb8592340a80e7e554e0bb9149f"
+    },
+    "@std/io@0.225.0": {
+      "integrity": "c1db7c5e5a231629b32d64b9a53139445b2ca640d828c26bf23e1c55f8c079b3"
+    }
+  },
+  "redirects": {
+    "https://deno.land/std/html/mod.ts": "https://deno.land/std@0.224.0/html/mod.ts",
+    "https://deno.land/std/progress/mod.ts": "https://deno.land/std@0.224.0/progress/mod.ts",
+    "https://deno.land/x/display/mod.ts": "https://deno.land/x/display@v1.1.2/mod.ts"
+  },
+  "remote": {
+    "https://deno.land/std@0.162.0/_util/assert.ts": "e94f2eb37cebd7f199952e242c77654e43333c1ac4c5c700e929ea3aa5489f74",
+    "https://deno.land/std@0.162.0/bytes/bytes_list.ts": "aba5e2369e77d426b10af1de0dcc4531acecec27f9b9056f4f7bfbf8ac147ab4",
+    "https://deno.land/std@0.162.0/bytes/equals.ts": "3c3558c3ae85526f84510aa2b48ab2ad7bdd899e2e0f5b7a8ffc85acb3a6043a",
+    "https://deno.land/std@0.162.0/bytes/mod.ts": "b2e342fd3669176a27a4e15061e9d588b89c1aaf5008ab71766e23669565d179",
+    "https://deno.land/std@0.162.0/fmt/colors.ts": "9e36a716611dcd2e4865adea9c4bec916b5c60caad4cdcdc630d4974e6bb8bd4",
+    "https://deno.land/std@0.162.0/io/buffer.ts": "fae02290f52301c4e0188670e730cd902f9307fb732d79c4aa14ebdc82497289",
+    "https://deno.land/std@0.162.0/streams/conversion.ts": "555c6c249f3acf85655f2d0af52d1cb3168e40b1c1fa26beefea501b333abe28",
+    "https://deno.land/std@0.224.0/html/entities.ts": "fd5ac9d459355a377baea118f4e808a1268808fd9138b319c90f11024e2f1718",
+    "https://deno.land/std@0.224.0/html/mod.ts": "047624f883874f4b9781da872f9579a615fb5418af30663c9ce0c65074ace87f",
+    "https://deno.land/x/display@v1.1.2/format.ts": "1ba3b8c5c1afdae558095479254f2dcef84d8fcd24464ebdd44f65d99e0b0b9e",
+    "https://deno.land/x/display@v1.1.2/mod.ts": "077bedee868852e0f220763d6781d8bcc077f68f0e3269a60e02e93a42c54b70",
+    "https://deno.land/x/progress@v1.3.0/deps.ts": "83050e627263931d853ba28b7c15c80bf4be912bea7e0d3d13da2bc0aaf7889d",
+    "https://deno.land/x/progress@v1.3.0/mod.ts": "de6a75f14964a870facb51b902d39d7fa391e2b4281af062c5c4525af0fa6796",
+    "https://deno.land/x/progress@v1.3.0/multi.ts": "8cd7c2df6b00148fa0cd60554693b337d85e95a823f40b7c1ec2ba0d301263db"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@types/cli-progress@^3.11.6",
+        "npm:@types/express@^4.17.21",
+        "npm:@types/jest@^29.5.12",
+        "npm:@types/lodash@^4.14.196",
+        "npm:@types/node@^18.16.0",
+        "npm:@types/progress@^2.0.7",
+        "npm:@types/uuid@^9.0.1",
+        "npm:axios@^1.9.0",
+        "npm:cli-progress@^3.12.0",
+        "npm:express@^4.19.2",
+        "npm:jest@^29.7.0",
+        "npm:lodash@^4.17.21",
+        "npm:progress@^2.0.3",
+        "npm:ts-jest@^29.1.2",
+        "npm:ts-node@^10.9.1",
+        "npm:typescript@^5.0.4",
+        "npm:uuid@9"
+      ]
+    }
+  }
+}

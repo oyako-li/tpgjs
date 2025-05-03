@@ -1,11 +1,14 @@
-.gstr
-/node_modules
-dist
-.log/
-release
 .env
+.DS_Store
+dist
+release
 
-log/*
-__pycache__/
 _tpg/configuration/__pycache__/
 TPG.egg-info/
+**/.gstr
+**/.log
+**/log
+**/__pycache__
+**/node_modules
+**/.ipynb_checkpoints
+*.ipynb
