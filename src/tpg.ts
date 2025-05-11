@@ -29,7 +29,7 @@ export class Swarm<T> extends Set<T> {
   }
 
   choice(): T {
-    const _set = [...this];
+    const _set = this.series;
     const _index = Math.floor(Math.random() * this.size);
     return _set[_index];
   }
@@ -73,6 +73,9 @@ export class Swarm<T> extends Set<T> {
   // difference(other: ReadonlySet<T>): Swarm<T> {
   //   return new Swarm([...this].filter((x) => !other.has(x)));
   // }
+  get series(): T[] {
+    return [...this];
+  }
 
   get select(): T {
     return [...this][0];
@@ -166,7 +169,11 @@ export class Qualia {
  */
 export class Program {
   public instructions: Array<any>;
+  public register: Array<number> = Array.from({ length: 8 }, () =>
+    Math.random()
+  );
   public id: string;
+  public generation: number;
   private static programs: Swarm<Program> = new Swarm<Program>();
 
   constructor(
@@ -177,21 +184,28 @@ export class Program {
     this.id = _id;
     if (_instance instanceof Program) {
       this.instructions = dash.cloneDeep(_instance.instructions);
+      this.generation = _instance.generation;
     } else if (typeof _instance === "number") {
       this.instructions = Array.from({ length: maxVal }, () =>
         Array.from({ length: 4 }, () => Math.floor(Math.random() * _instance))
       );
+      this.generation = 0;
     } else {
       this.instructions = Array.from({ length: maxVal }, () =>
         Array.from({ length: 4 }, () => Math.floor(Math.random() * 4))
       );
+      this.generation = 0;
     }
     Program.programs.add(this);
   }
 
-  public execute(state: any, registers: Array<number>, args: any): number {
-    let target = [...registers, ...state];
-    let memory = registers;
+  get vote(): number {
+    return Math.abs(this.register[0]);
+  }
+
+  public execute(state: any, args: any): Program {
+    let target = [...this.register, ...state];
+    let memory = this.register;
     for (let i = 0; i < this.instructions.length; i++) {
       const o = this.instructions[i][0];
       const d = this.instructions[i][1] % memory.length;
@@ -199,7 +213,7 @@ export class Program {
       const r = this.instructions[i][3] % target.length;
       memory[d] = this.operation(o, target[l], target[r]);
     }
-    return memory[0];
+    return this;
   }
 
   public mutate(mutateParams: Params) {
@@ -253,6 +267,7 @@ export class Program {
           Math.floor(Math.random() * mutateParams["inputSize"]),
         ]);
       }
+      this.generation++;
     }
   }
 
