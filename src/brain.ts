@@ -256,7 +256,6 @@ export class Neuron implements NeuralUnit {
     mutateParams: Params = {},
     visited: Set<string> = new Set()
   ): boolean {
-    if (visited.has(this.id)) return false; // すでに訪問済みなら再帰しない
     visited.add(this.id);
     const mutate = {
       threshold: 0.4,
@@ -275,6 +274,7 @@ export class Neuron implements NeuralUnit {
 
     if (flip(survival_prob)) {
       // 生存確率が高いほど、mutateする
+      if (visited.has(this.id)) return true; // すでに訪問済みなら再帰しない
       this.generation++;
       this.synapse = this.synapse.filter((x) => x.mutate(mutate, visited));
       while (flip(mutate.additional)) {
@@ -292,6 +292,7 @@ export class Neuron implements NeuralUnit {
       }
       return true;
     } else {
+      if (visited.has(this.id)) return false; // すでに訪問済みなら再帰しない
       // @todo 生存確率低ければ、memeをmutateする
       this.meme.delete(this.id);
       return false;
